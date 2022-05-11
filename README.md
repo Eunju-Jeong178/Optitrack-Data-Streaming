@@ -11,5 +11,4 @@ NatNetPollingSample.m 실행 후, 차례로 NatNetLib.dll, NatNetML.dll 종속�
 
 ### another method
 1. NatNetEventHandlerSample.m 실행시, position과 rotation이 plot 됨
-  <br/>
-  line75의 pause(#) 는 #초 동안 데이터를 받아오는 것을 의미
+  <br/>line75의 pause(#) 는 #초 동안 데이터를 받아오는 것을 의미
