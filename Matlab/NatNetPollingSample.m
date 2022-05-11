@@ -20,7 +20,29 @@
 % This sample connects to the server and displays rigid body data.
 % natnet.p, needs to be located on the Matlab Path.
 
+%--------------------------------------------------------------------------
+% Revised by Eunju Jeong
+% Email : eunju0316@sookmyung.ac.kr
+% Date : 2022.05.11
+%
+% This code allows user to get very accurate position & orientation 
+% information by using Optitrack
+%
+% Output data : 
+% 1) position_xyz.txt
+%   : x[mm], y[mm], z[mm]
+% 2) rotation_euler.txt
+%   : roll[deg], pitch[mm], yaw[mm]
+% 3) timestamp.txt
+%   : timestamp[ms]
+% 4) time_posision_rotation.txt
+%   : timestamp[ms] x[mm] y[mm] z[mm] roll[deg] pitch[mm] yaw[mm]
+%--------------------------------------------------------------------------
+
+
 function NatNetPollingSample
+    clc; clear all;
+
 	fprintf( 'NatNet Polling Sample Start\n' )
 
 	% create an instance of the natnet client class
@@ -30,9 +52,9 @@ function NatNetPollingSample
 	% connect the client to the server (multicast over local loopback) -
 	% modify for your network
 	fprintf( 'Connecting to the server\n' )
-	natnetclient.HostIP = '192.168.0.80';
-	natnetclient.ClientIP = '192.168.0.82';
-	natnetclient.ConnectionType = 'Multicast';
+	natnetclient.HostIP = '192.168.0.80'; % desktop(with Motive) ip address
+	natnetclient.ClientIP = '192.168.0.82'; % my laptop ip address
+	natnetclient.ConnectionType = 'Multicast'; % have to be same as Motive setting
 	natnetclient.connect;
 	if ( natnetclient.IsConnected == 0 )
 		fprintf( 'Client failed to connect\n' )
@@ -52,7 +74,9 @@ function NatNetPollingSample
 	fprintf( '\nPrinting rigid body frame data approximately every second for 10 seconds...\n\n' )
 	all_pos=[];
     all_rot=[];
-    time = 600; % 개수
+    all_time=[];
+
+    time = 10; % 개수
     for idx = 1 : time
 		java.lang.Thread.sleep( 50 ); % original is 996 % ms, 간격
 		data = natnetclient.getFrame; % method to get current frame
@@ -64,46 +88,65 @@ function NatNetPollingSample
 		end
 		fprintf( 'Frame:%6d  ' , data.Frame )
 		fprintf( 'Time:%0.2f\n' , data.Timestamp )
-        pos = [];
-        rot = [];
+        pos_append = [];
+        rot_append = [];
+        time_append = [];
+        
 		for i = 1:model.RigidBodyCount
 			fprintf( 'Name:"%s"  ', model.RigidBody( i ).Name )
+            % Get the x y z position 
             x = data.RigidBody( i ).x * 1000;
             y = data.RigidBody( i ).y * 1000;
             z = data.RigidBody( i ).z * 1000;
 
-            % Get the rb rotation
+            % Get the rotation
 	        %rb = evnt.data.RigidBodies( i );
 	        qx = data.RigidBody( i ).qx;
 	        qy = data.RigidBody( i ).qy;
 	        qz = data.RigidBody( i ).qz;
 	        qw = data.RigidBody( i ).qw;
-	
+
 	        q = quaternion( qx, qy, qz, qw );
 	        qRot = quaternion( 0, 0, 0, 1);
 	        q = mtimes( q, qRot);
 	        a = EulerAngles( q , 'zyx' );
-	        eulerx = a( 1 ) * -180.0 / pi;  % roll
-	        eulery = a( 2 ) * 180.0 / pi;   % pitch
-	        eulerz = a( 3 ) * -180.0 / pi;  % yaw
+	        eulerx = a( 1 ) * -180.0 / pi;  % roll (red, x axis)
+	        eulery = a( 2 ) * 180.0 / pi;   % pitch (green, y axis)
+	        eulerz = a( 3 ) * -180.0 / pi;  % yaw (blue, z axis)
 
-            fprintf( 'eulerX:%0.1fdeg  ', eulerx )  % roll
-			fprintf( 'eulerY:%0.1fdeg  ', eulery )  % pitch
-			fprintf( 'eulerZ:%0.1fdeg\n', eulerz )  % yaw
-            n = [eulerx eulery eulerz];
-            rot = horzcat(rot, n)
+            % print rotation [deg] (euler angle)
+            fprintf( 'eulerX:%0.6f deg  ', eulerx )  % roll
+			fprintf( 'eulerY:%0.6f deg  ', eulery )  % pitch
+			fprintf( 'eulerZ:%0.6f deg\n', eulerz )  % yaw
+            rot = [eulerx eulery eulerz];
+            rot_append = horzcat(rot_append, rot);
             
-			fprintf( 'X:%0.1fmm  ', x )
-			fprintf( 'Y:%0.1fmm  ', y )
-			fprintf( 'Z:%0.1fmm\n', z )
-            m = [x y z];
-            pos = horzcat(pos, m)
+            % print x y z position [mm]
+			fprintf( 'X:%0.6f mm  ', x )
+			fprintf( 'Y:%0.6f mm  ', y )
+			fprintf( 'Z:%0.6f mm\n', z )
+            pos = [x y z];
+            pos_append = horzcat(pos_append, pos);
+            
+            % print timestamp [ms]
+            fprintf( 'Timestamp:%0.6f ms\n\n  ', data.Timestamp)
+            timestamp = [data.Timestamp];
+            time_append = horzcat(time_append, timestamp);
+            
         end
-        all_pos = vertcat(all_pos, pos);
-        all_rot = vertcat(all_rot, rot);
+        all_pos = vertcat(all_pos, pos_append);
+        all_rot = vertcat(all_rot, rot_append);
+        all_time = vertcat(all_time, time_append);
     end
+    % write text files (position, rotation, timestamp)
     csvwrite('postion_xyz.txt',all_pos)
     csvwrite('rotation_euler.txt',all_rot)
+    csvwrite('timestamp.txt',all_time)
+    
+    % write text file: timestamp pos_x pos_y pos_z roll pitch yaw
+    all_information = [all_time all_pos all_rot];
+    writematrix(all_information, "time_position_rotation.txt", 'delimiter', ' ')
+
 	disp('NatNet Polling Sample End')
 end
 
