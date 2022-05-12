@@ -23,7 +23,7 @@
 %--------------------------------------------------------------------------
 % Revised by Eunju Jeong
 % Email : eunju0316@sookmyung.ac.kr
-% Date : 2022.05.11
+% Date : 2022.05.11 - 2022.05.12
 %
 % This code allows user to get very accurate position & orientation 
 % information by using Optitrack
@@ -31,11 +31,11 @@
 % Output data : 
 % 1) position_xyz.txt
 %   : x[mm], y[mm], z[mm]
-% 2) rotation_euler.txt
+% 2) euler_angle.txt
 %   : roll[deg], pitch[mm], yaw[mm]
 % 3) timestamp.txt
 %   : timestamp[ms]
-% 4) time_posision_rotation.txt
+% 4) time_posision_euler.txt
 %   : timestamp[ms] x[mm] y[mm] z[mm] roll[deg] pitch[mm] yaw[mm]
 %--------------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ function NatNetPollingSample
 	% modify for your network
 	fprintf( 'Connecting to the server\n' )
 	natnetclient.HostIP = '192.168.0.80'; % desktop(with Motive) ip address
-	natnetclient.ClientIP = '192.168.0.82'; % my laptop ip address
+	natnetclient.ClientIP = '192.168.0.80'; % my laptop ip address
 	natnetclient.ConnectionType = 'Multicast'; % have to be same as Motive setting
 	natnetclient.connect;
 	if ( natnetclient.IsConnected == 0 )
@@ -73,12 +73,13 @@ function NatNetPollingSample
 	% Poll for the rigid body data a regular intervals (~1 sec) for 10 sec.
 	fprintf( '\nPrinting rigid body frame data approximately every second for 10 seconds...\n\n' )
 	all_pos=[];
-    all_rot=[];
+    all_euler=[];
     all_time=[];
+    all_rotm = [];
 
-    time = 10; % 개수
+    time = 200; % the numger of data
     for idx = 1 : time
-		java.lang.Thread.sleep( 50 ); % original is 996 % ms, 간격
+		java.lang.Thread.sleep( 100 ); % original is 996 % ms, 간격
 		data = natnetclient.getFrame; % method to get current frame
 		
 		if (isempty(data.RigidBody(1)))
@@ -89,8 +90,9 @@ function NatNetPollingSample
 		fprintf( 'Frame:%6d  ' , data.Frame )
 		fprintf( 'Time:%0.2f\n' , data.Timestamp )
         pos_append = [];
-        rot_append = [];
+        euler_append = [];
         time_append = [];
+        rotm_append = [];
         
 		for i = 1:model.RigidBodyCount
 			fprintf( 'Name:"%s"  ', model.RigidBody( i ).Name )
@@ -99,8 +101,7 @@ function NatNetPollingSample
             y = data.RigidBody( i ).y * 1000;
             z = data.RigidBody( i ).z * 1000;
 
-            % Get the rotation
-	        %rb = evnt.data.RigidBodies( i );
+            % Get the euler angle
 	        qx = data.RigidBody( i ).qx;
 	        qy = data.RigidBody( i ).qy;
 	        qz = data.RigidBody( i ).qz;
@@ -115,11 +116,19 @@ function NatNetPollingSample
 	        eulerz = a( 3 ) * -180.0 / pi;  % yaw (blue, z axis)
 
             % print rotation [deg] (euler angle)
-            fprintf( 'eulerX:%0.6f deg  ', eulerx )  % roll
-			fprintf( 'eulerY:%0.6f deg  ', eulery )  % pitch
-			fprintf( 'eulerZ:%0.6f deg\n', eulerz )  % yaw
-            rot = [eulerx eulery eulerz];
-            rot_append = horzcat(rot_append, rot);
+            fprintf( 'eulerX:%0.6f deg  ', eulerx )  % roll [deg]
+			fprintf( 'eulerY:%0.6f deg  ', eulery )  % pitch [deg]
+			fprintf( 'eulerZ:%0.6f deg\n', eulerz )  % yaw [deg]
+            euler = [eulerx eulery -eulerz]; % [deg]
+            euler_append = horzcat(euler_append, euler);
+            euler_trans = [deg2rad(eulerx); deg2rad(eulery); deg2rad(-eulerz)]; % [rad]
+
+            rotm = angle2rotmtx(euler_trans) % euler angles to ratation matrix (3x3)
+            %rotm_Xaxis_minus90 = rotm*[1 0 0;0 0 1;0 -1 0]
+            
+            %rotm_1DArray = reshape(rotm_Xaxis_minus90.',1,[]); % (1x9)
+            rotm_1DArray = reshape(rotm.',1,[]); % (1x9)
+            rotm_append = [rotm_1DArray]
             
             % print x y z position [mm]
 			fprintf( 'X:%0.6f mm  ', x )
@@ -135,17 +144,24 @@ function NatNetPollingSample
             
         end
         all_pos = vertcat(all_pos, pos_append);
-        all_rot = vertcat(all_rot, rot_append);
+        all_euler = vertcat(all_euler, euler_append);
         all_time = vertcat(all_time, time_append);
+        all_rotm = vertcat(all_rotm, rotm_append);
+
     end
     % write text files (position, rotation, timestamp)
-    csvwrite('postion_xyz.txt',all_pos)
-    csvwrite('rotation_euler.txt',all_rot)
-    csvwrite('timestamp.txt',all_time)
-    
+    %csvwrite('position_optitrack.txt',all_pos)
+    %csvwrite('euler_angle_optitrack.txt',all_euler)
+    %csvwrite('timestamp_optitrack.txt',all_time)
+    %csvwrite('rotation_1x9_optitrack.txt',all_rotm)
+    writematrix(all_pos, 'input\position_optitrack.txt', 'delimiter', ' ')
+    writematrix(all_euler, 'input\euler_angle_optitrack.txt', 'delimiter', ' ')
+    writematrix(all_time, 'input\timestamp_optitrack.txt', 'delimiter', ' ')
+    writematrix(all_rotm, 'input\rotation_1x9_optitrack.txt', 'delimiter', ' ')
+
     % write text file: timestamp pos_x pos_y pos_z roll pitch yaw
-    all_information = [all_time all_pos all_rot];
-    writematrix(all_information, "time_position_rotation.txt", 'delimiter', ' ')
+    %all_information = [all_time all_pos all_euler];
+    %writematrix(all_information, "time_position_euler.txt", 'delimiter', ' ')
 
 	disp('NatNet Polling Sample End')
 end
