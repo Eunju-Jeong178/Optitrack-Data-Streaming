@@ -150,18 +150,10 @@ function NatNetPollingSample
 
     end
     % write text files (position, rotation, timestamp)
-    %csvwrite('position_optitrack.txt',all_pos)
-    %csvwrite('euler_angle_optitrack.txt',all_euler)
-    %csvwrite('timestamp_optitrack.txt',all_time)
-    %csvwrite('rotation_1x9_optitrack.txt',all_rotm)
     writematrix(all_pos, 'input\position_optitrack.txt', 'delimiter', ' ')
     writematrix(all_euler, 'input\euler_angle_optitrack.txt', 'delimiter', ' ')
     writematrix(all_time, 'input\timestamp_optitrack.txt', 'delimiter', ' ')
     writematrix(all_rotm, 'input\rotation_1x9_optitrack.txt', 'delimiter', ' ')
-
-    % write text file: timestamp pos_x pos_y pos_z roll pitch yaw
-    %all_information = [all_time all_pos all_euler];
-    %writematrix(all_information, "time_position_euler.txt", 'delimiter', ' ')
 
 	disp('NatNet Polling Sample End')
 end
