@@ -1,5 +1,5 @@
 % --------------------------------------------------------------------------------------------------------------------
-% Made by Eunju Jeong (eunju0316@sookmyung.ac.kr)
+% Author: Eunju Jeong (eunju0316@sookmyung.ac.kr)
 % 
 % input data  : The results of NatNetPollingSample.m
 %               2) timestamp_optitrack.txt 
