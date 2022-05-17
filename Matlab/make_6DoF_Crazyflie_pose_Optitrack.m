@@ -3,14 +3,14 @@
 % 
 % input data  : The results of NatNetPollingSample.m
 %               2) timestamp_optitrack.txt 
-%                  (timestamp[ms])
+%                  (timestamp[])
 %               3) position_optitrack.txt 
 %                  (tx[m] ty[m] tz[m])
 %               5) rotation_1x9_optitrack.txt 
 %                  (r11 r12 r13 r21 r22 r23 r31 r32 r33)
 %               
 % output data : 2) Optitrack_Crazyflie_6DoF_pose.txt
-%                  (timestamp[ms] r11 r12 r13 tx[m] r21 r22 r23 ty[m] r31 r32 r33 tz[m])
+%                  (timestamp[] r11 r12 r13 tx[m] r21 r22 r23 ty[m] r31 r32 r33 tz[m])
 % --------------------------------------------------------------------------------------------------------------------
 
 clear all; clc;
@@ -59,7 +59,7 @@ for k = 1:numPose
 end
 
 Optitrack_Crazyflie_6DoF_pose_1x13 = [0 0 0 0 0 0 0 0 0 0 0 0 0; Optitrack_Crazyflie_6DoF_pose'];
-%% step 5) save as .txt & .csv
+%% step 5) save Crazyflie 6DoF pose (by Optitrack) as .txt & .csv
 
 % Crazyflie_6DoF_pose.txt
 % timestamp[ms] r11 r12 r13 tx[m] r21 r22 r23 ty[m] r31 r32 r33 tz[m]
