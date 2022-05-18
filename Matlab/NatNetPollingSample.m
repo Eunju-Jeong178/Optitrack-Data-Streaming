@@ -25,8 +25,8 @@
 % Email : eunju0316@sookmyung.ac.kr
 % Date : 2022.05.11
 %
-% This code allows user to get very accurate position & orientation 
-% information by using Optitrack
+% This code allows user to get very accurate 6 DoF pose of ridig body 
+% by using Optitrack
 %
 % Output data : 
 % 1) input\position_optitrack.txt
