@@ -34,7 +34,7 @@
 % 2) input\euler_angle_optitrack.txt
 %   : roll[deg] pitch[deg] yaw[deg]
 % 3) input\timestamp_optitrack.txt
-%   : timestamp[unix version]
+%   : timestamp[unix timestamp version]
 % 4) input\rotation_1x9_optitrack.txt
 %   : r11 r12 r13 r21 r22 r23 r31 r32 r33[rad]
 %--------------------------------------------------------------------------
@@ -141,7 +141,7 @@ function NatNetPollingSample
             fprintf( 'Timestamp:%0.6f ms\n\n  ', data.Timestamp)
             %timestamp = [data.Timestamp];
             timestamp = (datetime("now", "TimeZone","Asia/Seoul")); % KST
-            timestamp = posixtime(timestamp); % unix time
+            timestamp = posixtime(timestamp); % unix timestamp (https://www.epochconverter.com/)
             time_append = horzcat(time_append, timestamp);
             
         end
