@@ -34,7 +34,7 @@
 % 2) input\euler_angle_optitrack.txt
 %   : roll[deg] pitch[deg] yaw[deg]
 % 3) input\timestamp_optitrack.txt
-%   : timestamp[unix timestamp version]
+%   : timestamp[unix version]
 % 4) input\rotation_1x9_optitrack.txt
 %   : r11 r12 r13 r21 r22 r23 r31 r32 r33[rad]
 %--------------------------------------------------------------------------
@@ -90,7 +90,7 @@ function NatNetPollingSample
 		fprintf( 'Frame:%6d  ' , data.Frame )
 		fprintf( 'Time:%0.2f\n' , data.Timestamp )
         pos_append = [];
-        euler_append = [];
+        euler_deg_append = [];
         time_append = [];
         rotm_append = [];
         
@@ -119,11 +119,11 @@ function NatNetPollingSample
             fprintf( 'eulerX:%0.6f deg  ', eulerx )  % roll [deg]
 			fprintf( 'eulerY:%0.6f deg  ', eulery )  % pitch [deg]
 			fprintf( 'eulerZ:%0.6f deg\n', eulerz )  % yaw [deg]
-            euler = [eulerx eulery -eulerz]; % [deg]
-            euler_append = horzcat(euler_append, euler);
-            euler_trans = [deg2rad(eulerx); deg2rad(eulery); deg2rad(-eulerz)]; % [rad]
+            euler_deg = [eulerx eulery -eulerz]; % [deg], yaw angle is opposite --> add minus
+            euler_deg_append = horzcat(euler_deg_append, euler_deg); % append data
+            euler_rad = [deg2rad(eulerx); deg2rad(eulery); deg2rad(-eulerz)]; % [deg] --> [rad], yaw angle is opposite --> add minus
 
-            rotm = angle2rotmtx(euler_trans) % euler angles to ratation matrix (3x3)
+            rotm = angle2rotmtx(euler_rad) % euler angles to ratation matrix (3x3)
             %rotm_Xaxis_minus90 = rotm*[1 0 0;0 0 1;0 -1 0]
             
             %rotm_1DArray = reshape(rotm_Xaxis_minus90.',1,[]); % (1x9)
@@ -141,29 +141,21 @@ function NatNetPollingSample
             fprintf( 'Timestamp:%0.6f ms\n\n  ', data.Timestamp)
             %timestamp = [data.Timestamp];
             timestamp = (datetime("now", "TimeZone","Asia/Seoul")); % KST
-            timestamp = posixtime(timestamp); % unix timestamp (https://www.epochconverter.com/)
+            timestamp = posixtime(timestamp); % unix time
             time_append = horzcat(time_append, timestamp);
             
         end
         all_pos = vertcat(all_pos, pos_append);
-        all_euler = vertcat(all_euler, euler_append);
+        all_euler = vertcat(all_euler, euler_deg_append);
         all_time = vertcat(all_time, time_append);
         all_rotm = vertcat(all_rotm, rotm_append);
 
     end
     % write text files (position, rotation, timestamp)
-    %csvwrite('position_optitrack.txt',all_pos)
-    %csvwrite('euler_angle_optitrack.txt',all_euler)
-    %csvwrite('timestamp_optitrack.txt',all_time)
-    %csvwrite('rotation_1x9_optitrack.txt',all_rotm)
     writematrix(all_pos, 'input\position_optitrack.txt', 'delimiter', ' ')
     writematrix(all_euler, 'input\euler_angle_optitrack.txt', 'delimiter', ' ')
     writematrix(all_time, 'input\timestamp_optitrack.txt', 'delimiter', ' ')
     writematrix(all_rotm, 'input\rotation_1x9_optitrack.txt', 'delimiter', ' ')
-
-    % write text file: timestamp pos_x pos_y pos_z roll pitch yaw
-    %all_information = [all_time all_pos all_euler];
-    %writematrix(all_information, "time_position_euler.txt", 'delimiter', ' ')
 
 	disp('NatNet Polling Sample End')
 end
