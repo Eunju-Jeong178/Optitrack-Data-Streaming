@@ -23,20 +23,20 @@
 %--------------------------------------------------------------------------
 % Revised by Eunju Jeong
 % Email : eunju0316@sookmyung.ac.kr
-% Date : 2022.05.11 - 2022.05.12
+% Date : 2022.05.11
 %
 % This code allows user to get very accurate position & orientation 
 % information by using Optitrack
 %
 % Output data : 
-% 1) position_xyz.txt
-%   : x[mm], y[mm], z[mm]
-% 2) euler_angle.txt
-%   : roll[deg], pitch[mm], yaw[mm]
-% 3) timestamp.txt
-%   : timestamp[ms]
-% 4) time_posision_euler.txt
-%   : timestamp[ms] x[mm] y[mm] z[mm] roll[deg] pitch[mm] yaw[mm]
+% 1) input\position_optitrack.txt
+%   : x[mm] y[mm] z[mm]
+% 2) input\euler_angle_optitrack.txt
+%   : roll[deg] pitch[deg] yaw[deg]
+% 3) input\timestamp_optitrack.txt
+%   : timestamp[unix timestamp version]
+% 4) input\rotation_1x9_optitrack.txt
+%   : r11 r12 r13 r21 r22 r23 r31 r32 r33[rad]
 %--------------------------------------------------------------------------
 
 
@@ -53,7 +53,7 @@ function NatNetPollingSample
 	% modify for your network
 	fprintf( 'Connecting to the server\n' )
 	natnetclient.HostIP = '192.168.0.80'; % desktop(with Motive) ip address
-	natnetclient.ClientIP = '192.168.0.80'; % my laptop ip address
+	natnetclient.ClientIP = '192.168.0.80'; % my laptop ip address, for acquire 6DoF, timestamp data
 	natnetclient.ConnectionType = 'Multicast'; % have to be same as Motive setting
 	natnetclient.connect;
 	if ( natnetclient.IsConnected == 0 )
@@ -79,7 +79,7 @@ function NatNetPollingSample
 
     time = 200; % the numger of data
     for idx = 1 : time
-		java.lang.Thread.sleep( 100 ); % original is 996 % ms, 간격
+		java.lang.Thread.sleep( 100 ); % original is 996 % ms, time interval
 		data = natnetclient.getFrame; % method to get current frame
 		
 		if (isempty(data.RigidBody(1)))
@@ -139,7 +139,9 @@ function NatNetPollingSample
             
             % print timestamp [ms]
             fprintf( 'Timestamp:%0.6f ms\n\n  ', data.Timestamp)
-            timestamp = [data.Timestamp];
+            %timestamp = [data.Timestamp];
+            timestamp = (datetime("now", "TimeZone","Asia/Seoul")); % KST
+            timestamp = posixtime(timestamp); % unix timestamp (https://www.epochconverter.com/)
             time_append = horzcat(time_append, timestamp);
             
         end
@@ -150,10 +152,18 @@ function NatNetPollingSample
 
     end
     % write text files (position, rotation, timestamp)
+    %csvwrite('position_optitrack.txt',all_pos)
+    %csvwrite('euler_angle_optitrack.txt',all_euler)
+    %csvwrite('timestamp_optitrack.txt',all_time)
+    %csvwrite('rotation_1x9_optitrack.txt',all_rotm)
     writematrix(all_pos, 'input\position_optitrack.txt', 'delimiter', ' ')
     writematrix(all_euler, 'input\euler_angle_optitrack.txt', 'delimiter', ' ')
     writematrix(all_time, 'input\timestamp_optitrack.txt', 'delimiter', ' ')
     writematrix(all_rotm, 'input\rotation_1x9_optitrack.txt', 'delimiter', ' ')
+
+    % write text file: timestamp pos_x pos_y pos_z roll pitch yaw
+    %all_information = [all_time all_pos all_euler];
+    %writematrix(all_information, "time_position_euler.txt", 'delimiter', ' ')
 
 	disp('NatNet Polling Sample End')
 end
