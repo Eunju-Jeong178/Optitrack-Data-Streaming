@@ -34,7 +34,7 @@
 % 2) input\euler_angle_optitrack.txt
 %   : roll[deg] pitch[deg] yaw[deg]
 % 3) input\timestamp_optitrack.txt
-%   : timestamp[unix timestamp version]
+%   : timestamp[unix version]
 % 4) input\rotation_1x9_optitrack.txt
 %   : r11 r12 r13 r21 r22 r23 r31 r32 r33[rad]
 %--------------------------------------------------------------------------
@@ -77,9 +77,9 @@ function NatNetPollingSample
     all_time=[];
     all_rotm = [];
 
-    time = 200; % the number of data
+    time = 60; % the number of data
     for idx = 1 : time
-		java.lang.Thread.sleep( 100 ); % original is 996 % ms, time interval
+		java.lang.Thread.sleep( 100 ); % time interval, for example, [1Hz: 1000 ms] and [10Hz: 100ms]
 		data = natnetclient.getFrame; % method to get current frame
 		
 		if (isempty(data.RigidBody(1)))
@@ -141,7 +141,10 @@ function NatNetPollingSample
             fprintf( 'Timestamp:%0.6f ms\n\n  ', data.Timestamp)
             %timestamp = [data.Timestamp];
             timestamp = (datetime("now", "TimeZone","Asia/Seoul")); % KST
-            timestamp = posixtime(timestamp); % unix timestamp (https://www.epochconverter.com/)
+            
+            % if you want to get KST version timestamp (hh:mm:ss), comment this line
+            timestamp = posixtime(timestamp); % unix timestamp, (https://www.epochconverter.com/)
+            
             time_append = horzcat(time_append, timestamp);
             
         end
