@@ -77,7 +77,7 @@ function NatNetPollingSample
     all_time=[];
     all_rotm = [];
 
-    time = 200; % the numger of data
+    time = 200; % the number of data
     for idx = 1 : time
 		java.lang.Thread.sleep( 100 ); % original is 996 % ms, time interval
 		data = natnetclient.getFrame; % method to get current frame
