@@ -34,7 +34,7 @@
 % 2) input\euler_angle_optitrack.txt
 %   : roll[deg] pitch[deg] yaw[deg]
 % 3) input\timestamp_optitrack.txt
-%   : timestamp[unix version]
+%   : timestamp[unix time stamp version, https://www.epochconverter.com/]
 % 4) input\rotation_1x9_optitrack.txt
 %   : r11 r12 r13 r21 r22 r23 r31 r32 r33[rad]
 %--------------------------------------------------------------------------
