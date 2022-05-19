@@ -142,7 +142,7 @@ function NatNetPollingSample
             %timestamp = [data.Timestamp];
             timestamp = (datetime("now", "TimeZone","Asia/Seoul")); % KST
             
-            % if you want to get KST version timestamp (yyyy-mm-dd HH:MM:SS), comment this line
+            % if you want to get KST version timestamp (YYYY-MM-DD hh:mm:ss), comment this line
             timestamp = posixtime(timestamp); % unix timestamp, (https://www.epochconverter.com/)
             
             time_append = horzcat(time_append, timestamp);
