@@ -23,7 +23,7 @@
 %--------------------------------------------------------------------------
 % Revised by Eunju Jeong
 % Email : eunju0316@sookmyung.ac.kr
-% Date : 2022.05.11 - 2022.05.12
+% Date : 2022.05.11
 %
 % This code allows user to get very accurate 6 DoF pose of ridig body 
 % by using Optitrack
@@ -74,14 +74,15 @@ function NatNetPollingSample
 	fprintf( '\nPrinting rigid body frame data approximately every second for 10 seconds...\n\n' )
 	all_pos=[];
     all_euler=[];
-    all_time=[];
+    all_unixtime=[];
     all_rotm = [];
+    all_datetime=[];
 
-    time = 600; % the number of data
+    time = 10; % the number of data
     for idx = 1 : time
 
         % to change Hz, change this number (for example, [1Hz --> 1000 ms] and [10Hz --> 100ms])
-		java.lang.Thread.sleep( 50 ); % time interval
+		java.lang.Thread.sleep(10); % time interval
         % java.lang.Thread.sleep(10) --> 60 ~ 100 Hz
         
 		data = natnetclient.getFrame; % method to get current frame
@@ -95,8 +96,9 @@ function NatNetPollingSample
 		fprintf( 'Time:%0.2f\n' , data.Timestamp )
         pos_append = [];
         euler_deg_append = [];
-        time_append = [];
+        unixtime_append = [];
         rotm_append = [];
+        datetime_append = [];
         
 		for i = 1:model.RigidBodyCount
 			fprintf( 'Name:"%s"  ', model.RigidBody( i ).Name )
@@ -124,17 +126,10 @@ function NatNetPollingSample
 			fprintf( 'eulerY:%0.6f deg  ', eulery )  % pitch [deg]
 			fprintf( 'eulerZ:%0.6f deg\n', eulerz )  % yaw [deg]
 
-            euler_deg = [eulerx eulery -eulerz]; % [deg], yaw angle is opposite --> add minus
-            %euler_deg_xaxis_minus90rot = euler_deg*[1 0 0;0 0 1;0 -1 0]
-
-            % original
+            euler_deg = [eulerx eulerz -eulery]; % [deg], yaw angle is opposite --> add minus
             euler_deg_append = horzcat(euler_deg_append, euler_deg); % append data
-            %euler_deg_append = horzcat(euler_deg_append, euler_deg_xaxis_minus90rot); % append data
             
-            % original
-            euler_rad = [deg2rad(eulerx); deg2rad(eulery); -deg2rad(eulerz)]; % [deg] --> [rad], yaw angle is opposite --> add minus
-
-            %euler_rad = [deg2rad(euler_deg_xaxis_minus90rot(1)); deg2rad(euler_deg_xaxis_minus90rot(2)); deg2rad(euler_deg_xaxis_minus90rot(3))];
+            euler_rad = [deg2rad(eulerx); deg2rad(eulerz); -deg2rad(eulery)]; % [deg] --> [rad], yaw angle is opposite --> add minus
 
             rotm = angle2rotmtx(euler_rad) % euler angles to ratation matrix (3x3)
             
@@ -151,42 +146,46 @@ function NatNetPollingSample
 			fprintf( 'X:%0.6f mm  ', x )
 			fprintf( 'Y:%0.6f mm  ', y )
 			fprintf( 'Z:%0.6f mm\n', z )
-            pos = [x y z]; %x y z
-            %pos_xaxis_minus90rot = pos*[1 0 0;0 0 1;0 -1 0]
+            pos = [x y z]; 
+            pos_xaxis_minus90rot = pos*[1 0 0;0 0 1;0 -1 0] % Pc = Po*Roc
 
             %original
             pos_append = horzcat(pos_append, pos);
+%             pos_append = horzcat(pos_append, pos_xaxis_minus90rot);
 
-            %pos_append = horzcat(pos_append, pos_xaxis_minus90rot);
 
             % print timestamp [ms]
             fprintf( 'Timestamp:%0.6f ms\n\n  ', data.Timestamp)
             
             %timestamp = [data.Timestamp];
             
-            timestamp = (datetime("now", "TimeZone","Asia/Seoul")); % KST
-            
+            timestamp_datetime = (datetime("now", "TimeZone","Asia/Seoul", "Format","HH:mm:ss.SSS")); % KST 
+            datetime_append = horzcat(datetime_append, timestamp_datetime)
+
+
             % if you want to get KST version timestamp (yyyy-mm-dd HH:MM:SS), comment this line
-            timestamp = posixtime(timestamp); % unix timestamp, (https://www.epochconverter.com/)
+            timestamp_unixtime = posixtime(timestamp_datetime); % unix timestamp, (https://www.epochconverter.com/)
             
-            time_append = horzcat(time_append, timestamp);
+            unixtime_append = horzcat(unixtime_append, timestamp_unixtime);
             
         end
         all_pos = vertcat(all_pos, pos_append);
         all_euler = vertcat(all_euler, euler_deg_append);
-        all_time = vertcat(all_time, time_append);
+        all_unixtime = vertcat(all_unixtime, unixtime_append);
         all_rotm = vertcat(all_rotm, rotm_append);
+        all_datetime = vertcat(all_datetime, datetime_append);
 
     end
     % write text files (position, rotation, timestamp)
     writematrix(all_pos, 'input\position_optitrack.txt', 'delimiter', ' ')
     writematrix(all_euler, 'input\euler_angle_optitrack.txt', 'delimiter', ' ')
-    writematrix(all_time, 'input\timestamp_optitrack.txt', 'delimiter', ' ')
+    writematrix(all_unixtime, 'input\timestamp_optitrack.txt', 'delimiter', ' ')
     writematrix(all_rotm, 'input\rotation_1x9_optitrack.txt', 'delimiter', ' ')
+    writematrix(all_datetime, 'input\date_timestamp_optitrack.txt', 'delimiter', ' ')
 
     disp('Done making position, orientation, and timestamp text file!')
 
-    % When you the timestamp format is KST(yyyy-mm-dd HH:MM:SS),
+    % When the timestamp format is KST(yyyy-mm-dd HH:MM:SS),
     % then comment this line
     % and run 'make_6Dof_pose_crazyflie_optitrack.m' seperately.
     make_6DoF_pose_crazyflie_optirack % make 6 DoF pose of Crazyflie (Optitrack)
